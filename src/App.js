@@ -14,6 +14,240 @@ const Logo = () => (
   </svg>
 );
 
+const AdminDashboard = () => {
+  const [tab, setTab] = useState('products');
+  const [products, setProducts] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [sales, setSales] = useState({ total_revenue: 0, total_orders: 0, paid_orders: 0 });
+  const [progress, setProgress] = useState({ orders_by_status: [], revenue_last_7_days: [], new_users_last_7_days: [] });
+  const navigate = useNavigate();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (!token) {
+          navigate('/signin');
+          return;
+        }
+
+        if (tab === 'products') {
+          const r = await fetch('/api/admin/menu/items', { headers });
+          if (r.status === 401 || r.status === 403) { navigate('/signin'); return; }
+          const j = r.ok ? await r.json() : [];
+          setProducts(Array.isArray(j) ? j : []);
+        } else if (tab === 'users') {
+          const r = await fetch('/api/admin/users', { headers });
+          if (r.status === 401 || r.status === 403) { navigate('/signin'); return; }
+          const j = r.ok ? await r.json() : [];
+          setUsers(Array.isArray(j) ? j : []);
+        } else if (tab === 'orders') {
+          const r = await fetch('/api/admin/orders', { headers });
+          if (r.status === 401 || r.status === 403) { navigate('/signin'); return; }
+          const j = r.ok ? await r.json() : [];
+          setOrders(Array.isArray(j) ? j : []);
+        } else if (tab === 'sales') {
+          const r = await fetch('/api/admin/sales/summary', { headers });
+          if (r.status === 401 || r.status === 403) { navigate('/signin'); return; }
+          const j = r.ok ? await r.json() : {};
+          setSales(j && typeof j === 'object' ? j : { total_revenue: 0, total_orders: 0, paid_orders: 0 });
+        } else if (tab === 'progress') {
+          const r = await fetch('/api/admin/progress', { headers });
+          if (r.status === 401 || r.status === 403) { navigate('/signin'); return; }
+          const j = r.ok ? await r.json() : {};
+          setProgress(j && typeof j === 'object' ? j : { orders_by_status: [], revenue_last_7_days: [], new_users_last_7_days: [] });
+        }
+      } catch (e) {
+        if (tab === 'products') setProducts([]);
+        if (tab === 'users') setUsers([]);
+        if (tab === 'orders') setOrders([]);
+        if (tab === 'sales') setSales({ total_revenue: 0, total_orders: 0, paid_orders: 0 });
+        if (tab === 'progress') setProgress({ orders_by_status: [], revenue_last_7_days: [], new_users_last_7_days: [] });
+      }
+    };
+    load();
+  }, [tab]);
+
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <h1 className="text-3xl font-bold text-violet-400 mb-6">Admin Dashboard</h1>
+      <div className="flex space-x-3 mb-6">
+        <button className={`px-4 py-2 rounded ${tab==='products'?'bg-violet-700':'bg-slate-700'}`} onClick={()=>setTab('products')}>Products</button>
+        <button className={`px-4 py-2 rounded ${tab==='users'?'bg-violet-700':'bg-slate-700'}`} onClick={()=>setTab('users')}>Users</button>
+        <button className={`px-4 py-2 rounded ${tab==='orders'?'bg-violet-700':'bg-slate-700'}`} onClick={()=>setTab('orders')}>Orders</button>
+        <button className={`px-4 py-2 rounded ${tab==='sales'?'bg-violet-700':'bg-slate-700'}`} onClick={()=>setTab('sales')}>Sales</button>
+        <button className={`px-4 py-2 rounded ${tab==='progress'?'bg-violet-700':'bg-slate-700'}`} onClick={()=>setTab('progress')}>Progress</button>
+      </div>
+
+      {tab==='products' && (
+        <div className="overflow-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-800">
+              <tr>
+                <th className="px-4 py-2">ID</th>
+                <th className="px-4 py-2">Name</th>
+                <th className="px-4 py-2">Category</th>
+                <th className="px-4 py-2">Price</th>
+                <th className="px-4 py-2">Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map(p => (
+                <tr key={p.id} className="border-b border-slate-800">
+                  <td className="px-4 py-2">{p.id}</td>
+                  <td className="px-4 py-2">{p.name}</td>
+                  <td className="px-4 py-2">{p.category_name}</td>
+                  <td className="px-4 py-2">{p.price}</td>
+                  <td className="px-4 py-2">{p.is_available ? 'Yes' : 'No'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab==='users' && (
+        <div className="overflow-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-800">
+              <tr>
+                <th className="px-4 py-2">ID</th>
+                <th className="px-4 py-2">Name</th>
+                <th className="px-4 py-2">Email</th>
+                <th className="px-4 py-2">City</th>
+                <th className="px-4 py-2">Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id} className="border-b border-slate-800">
+                  <td className="px-4 py-2">{u.id}</td>
+                  <td className="px-4 py-2">{u.name}</td>
+                  <td className="px-4 py-2">{u.email}</td>
+                  <td className="px-4 py-2">{u.city}</td>
+                  <td className="px-4 py-2">{u.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab==='orders' && (
+        <div className="overflow-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-800">
+              <tr>
+                <th className="px-4 py-2">Order #</th>
+                <th className="px-4 py-2">Customer</th>
+                <th className="px-4 py-2">Total</th>
+                <th className="px-4 py-2">Payment</th>
+                <th className="px-4 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map(o => (
+                <tr key={o.id} className="border-b border-slate-800">
+                  <td className="px-4 py-2">{o.order_number}</td>
+                  <td className="px-4 py-2">{o.customer_name}</td>
+                  <td className="px-4 py-2">{o.total_amount}</td>
+                  <td className="px-4 py-2">{o.payment_status}</td>
+                  <td className="px-4 py-2">{o.order_status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab==='sales' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-slate-800 rounded p-4 border border-violet-800">
+            <div className="text-gray-400">Total Revenue</div>
+            <div className="text-2xl font-semibold text-violet-300">{sales.total_revenue}</div>
+          </div>
+          <div className="bg-slate-800 rounded p-4 border border-violet-800">
+            <div className="text-gray-400">Total Orders</div>
+            <div className="text-2xl font-semibold text-violet-300">{sales.total_orders}</div>
+          </div>
+          <div className="bg-slate-800 rounded p-4 border border-violet-800">
+            <div className="text-gray-400">Paid Orders</div>
+            <div className="text-2xl font-semibold text-violet-300">{sales.paid_orders}</div>
+          </div>
+        </div>
+      )}
+
+      {tab==='progress' && (
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-slate-800 rounded p-4 border border-violet-800">
+            <div className="text-gray-400 mb-3">Orders by Status</div>
+            <div className="space-y-2">
+              {(() => {
+                const items = (progress.orders_by_status || []);
+                const maxVal = Math.max(1, ...items.map(i => Number(i.count) || 0));
+                return items.map(s => (
+                  <div key={s.status} className="">
+                    <div className="flex justify-between text-sm text-gray-300">
+                      <span>{s.status}</span>
+                      <span>{s.count}</span>
+                    </div>
+                    <div className="w-full bg-slate-900 rounded h-2">
+                      <div className="bg-violet-600 h-2 rounded" style={{ width: `${((Number(s.count)||0)/maxVal*100).toFixed(0)}%` }} />
+                    </div>
+                  </div>
+                ));
+              })()}
+              {(!progress || !progress.orders_by_status || progress.orders_by_status.length === 0) && (
+                <div className="text-gray-500">No data</div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-slate-800 rounded p-4 border border-violet-800">
+            <div className="text-gray-400 mb-3">Revenue (Last 7 Days)</div>
+            <div className="grid grid-cols-7 gap-2 items-end h-32">
+              {(() => {
+                const items = (progress.revenue_last_7_days || []);
+                const maxVal = Math.max(1, ...items.map(i => Number(i.revenue) || 0));
+                return items.map(d => (
+                  <div key={d.date} className="flex flex-col items-center">
+                    <div className="w-6 bg-violet-600 rounded" style={{ height: `${((Number(d.revenue)||0)/maxVal*100).toFixed(0)}%` }} />
+                    <div className="text-[10px] text-gray-400 mt-1">{String(d.date).slice(5)}</div>
+                  </div>
+                ));
+              })()}
+              {(!progress || !progress.revenue_last_7_days || progress.revenue_last_7_days.length === 0) && (
+                <div className="text-gray-500">No data</div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-slate-800 rounded p-4 border border-violet-800">
+            <div className="text-gray-400 mb-3">New Users (Last 7 Days)</div>
+            <div className="grid grid-cols-7 gap-2 items-end h-32">
+              {(() => {
+                const items = (progress.new_users_last_7_days || []);
+                const maxVal = Math.max(1, ...items.map(i => Number(i.count) || 0));
+                return items.map(d => (
+                  <div key={d.date} className="flex flex-col items-center">
+                    <div className="w-6 bg-violet-600 rounded" style={{ height: `${((Number(d.count)||0)/maxVal*100).toFixed(0)}%` }} />
+                    <div className="text-[10px] text-gray-400 mt-1">{String(d.date).slice(5)}</div>
+                  </div>
+                ));
+              })()}
+              {(!progress || !progress.new_users_last_7_days || progress.new_users_last_7_days.length === 0) && (
+                <div className="text-gray-500">No data</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 const NavBar = ({ isAuthenticated, setIsAuthenticated }) => {
   const [showAuthMenu, setShowAuthMenu] = useState(false);
   const authMenuRef = useRef(null);
@@ -41,21 +275,6 @@ const NavBar = ({ isAuthenticated, setIsAuthenticated }) => {
 
   const handleNavigation = (e, path) => {
     e.preventDefault();
-    
-    // Special handling for home - always scroll to top
-    if (path === '/#home' || path === '/') {
-      if (location.pathname !== '/') {
-        navigate('/');
-        // Add a small delay to ensure the page loads before scrolling
-        setTimeout(() => {
-          scrollToTop();
-        }, 100);
-      } else {
-        scrollToTop();
-      }
-      return;
-    }
-    
     if (location.pathname !== '/') {
       navigate('/');
       // Add a small delay to ensure the page loads before scrolling
@@ -74,10 +293,13 @@ const NavBar = ({ isAuthenticated, setIsAuthenticated }) => {
   };
 
   const handleSignOut = () => {
+    localStorage.removeItem('token');
     setIsAuthenticated(false);
     setShowAuthMenu(false);
     navigate('/');
   };
+  
+  const isAdminRoute = location.pathname.startsWith('/admin');
   
   return (
     <nav className="bg-slate-900 text-white p-4 sticky top-0 z-10 shadow-xl border-b border-violet-800">
@@ -89,12 +311,23 @@ const NavBar = ({ isAuthenticated, setIsAuthenticated }) => {
           </Link>
       </div>
         <div className="flex items-center space-x-6">
-          <a href="/#home" onClick={(e) => handleNavigation(e, '/#home')} className="hover:text-violet-300 transition-colors">Home</a>
-          <Link to="/about" className="hover:text-violet-300 transition-colors" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>About</Link>
-          <a href="/#menu" onClick={(e) => handleNavigation(e, '/#menu')} className="hover:text-violet-300 transition-colors">Menu</a>
-          <a href="/#contact" onClick={(e) => handleNavigation(e, '/#contact')} className="hover:text-violet-300 transition-colors">Contact</a>
-          
+          {!isAdminRoute && (
+            <>
+              <a href="/#home" onClick={(e) => handleNavigation(e, '/#home')} className="hover:text-violet-300 transition-colors">Home</a>
+              <Link to="/about" className="hover:text-violet-300 transition-colors" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>About</Link>
+              <a href="/#menu" onClick={(e) => handleNavigation(e, '/#menu')} className="hover:text-violet-300 transition-colors">Menu</a>
+              <a href="/#contact" onClick={(e) => handleNavigation(e, '/#contact')} className="hover:text-violet-300 transition-colors">Contact</a>
+            </>
+          )}
           {isAuthenticated ? (
+            isAdminRoute ? (
+              <button
+                onClick={handleSignOut}
+                className="flex items-center space-x-2 bg-violet-700 text-white px-4 py-2 rounded-full hover:bg-violet-800 transition-colors"
+              >
+                <span>Sign Out</span>
+              </button>
+            ) : (
             <div className="relative" ref={authMenuRef}>
               <button
                 onClick={() => setShowAuthMenu(!showAuthMenu)}
@@ -138,6 +371,7 @@ const NavBar = ({ isAuthenticated, setIsAuthenticated }) => {
                 </div>
               )}
             </div>
+            )
           ) : (
             <div className="relative" ref={authMenuRef}>
               <button
@@ -2583,30 +2817,61 @@ const App = () => {
     setTotal(0);
   };
 
-  const createOrder = (deliveryData, cartItems, totalAmount) => {
-    const newOrder = {
-      id: `ORD${Date.now()}`,
-      date: new Date().toISOString(),
-      total: totalAmount,
-      items: cartItems.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price
-      })),
-      deliveryInfo: {
-        firstName: deliveryData.firstName,
-        lastName: deliveryData.lastName,
-        phone: deliveryData.phone,
-        email: deliveryData.email,
-        address: deliveryData.address,
-        city: deliveryData.city,
-        instructions: deliveryData.instructions,
-        paymentMethod: deliveryData.paymentMethod
+  const createOrder = async (deliveryData, cartItems, totalAmount) => {
+    // Persist order to backend API so it is stored in MySQL
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ deliveryData, cartItems, totalAmount })
+      });
+
+      if (!response.ok) {
+        let message = 'Order creation failed';
+        const text = await response.text();
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed && parsed.error) message = parsed.error;
+        } catch (_) {
+          if (text) message = `${response.status} ${response.statusText}: ${text}`;
+          else message = `${response.status} ${response.statusText}`;
+        }
+        throw new Error(message);
       }
-    };
-    
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
-    return newOrder;
+
+      const data = await response.json();
+
+      // Optimistically add a simple summary locally for UI continuity
+      const optimisticOrder = {
+        id: data.orderNumber || `ORD${Date.now()}`,
+        date: new Date().toISOString(),
+        total: totalAmount,
+        items: cartItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        deliveryInfo: {
+          firstName: deliveryData.firstName,
+          lastName: deliveryData.lastName,
+          phone: deliveryData.phone,
+          email: deliveryData.email,
+          address: deliveryData.address,
+          city: deliveryData.city,
+          instructions: deliveryData.instructions,
+          paymentMethod: deliveryData.paymentMethod
+        }
+      };
+      setOrders(prevOrders => [optimisticOrder, ...prevOrders]);
+      return optimisticOrder;
+    } catch (e) {
+      alert(e.message);
+      throw e;
+    }
   };
 
   const handleSignUp = async (formData) => {
@@ -2690,6 +2955,11 @@ const App = () => {
         city: data.user.city
       });
       setIsAuthenticated(true);
+      if ((data.user.role || 'user') === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
       return true;
     } catch (e) {
       alert(e.message);
@@ -2746,6 +3016,12 @@ const App = () => {
             <Orders orders={orders} />
           </>
         } />
+        <Route path="/admin" element={
+          <>
+            <NavBar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
+            <AdminDashboard />
+          </>
+        } />
         <Route
           path="/"
           element={
@@ -2796,98 +3072,8 @@ const App = () => {
             </>
           }
         />
-        <Route path="/forgot-password" element={
-          <>
-            <NavBar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
-            <ForgotPassword />
-          </>
-        } />
       </Routes>
     </div>
-  );
-};
-
-const ForgotPassword = () => {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = {};
-    if (!/\S+@\S+\.\S+/.test(email)) errs.email = 'Valid email required';
-    if (!newPassword || newPassword.length < 6) errs.newPassword = 'Min 6 characters';
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-    setErrors({});
-    setIsLoading(true);
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword })
-      });
-      if (!res.ok) {
-        const t = await res.text();
-        try { const p = JSON.parse(t); throw new Error(p.error || 'Reset failed'); }
-        catch(_) { throw new Error(t || 'Reset failed'); }
-      }
-      alert('Password updated. Please sign in with your new password.');
-      navigate('/signin');
-    } catch (err) {
-      setErrors({ submit: err.message });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <AuthLayout
-      title="Reset your password"
-      subtitle="Remembered it?"
-      linkText="Back to sign in"
-      linkTo="/signin"
-    >
-      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        {errors.submit && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg" role="alert">
-            <span className="block sm:inline">{errors.submit}</span>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <FormInput
-            id="reset-email"
-            name="email"
-            type="email"
-            label="Email address"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
-            autoComplete="email"
-          />
-          <FormInput
-            id="reset-password"
-            name="newPassword"
-            type="password"
-            label="New password"
-            placeholder="New password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            error={errors.newPassword}
-            autoComplete="new-password"
-          />
-
-          <AuthButton
-            isLoading={isLoading}
-            text="Update password"
-            loadingText="Updating..."
-          />
-        </div>
-      </form>
-    </AuthLayout>
   );
 };
 

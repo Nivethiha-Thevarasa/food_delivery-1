@@ -85,23 +85,7 @@ CREATE TABLE order_items (
     FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
 );
 
--- =====================================================
--- CART TABLE - Store user shopping cart
--- =====================================================
-CREATE TABLE cart (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    menu_item_id INT,
-    quantity INT NOT NULL DEFAULT 1,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id),
-    UNIQUE KEY unique_user_item (user_id, menu_item_id)
-);
 
--- =====================================================
--- INSERT SAMPLE DATA
--- =====================================================
 
 -- Insert sample categories
 INSERT INTO categories (name, description) VALUES

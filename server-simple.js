@@ -158,28 +158,6 @@ app.post('/api/auth/signin', async (req, res) => {
   }
 });
 
-// Reset password by email (simple server)
-app.post('/api/auth/reset-password', async (req, res) => {
-  try {
-    const { email, newPassword } = req.body;
-    if (!email || !newPassword) {
-      return res.status(400).json({ error: 'Email and newPassword are required' });
-    }
-
-    const [users] = await db.promise().query('SELECT id FROM users WHERE email = ?', [email]);
-    if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const hashed = await bcrypt.hash(newPassword, 10);
-    await db.promise().query('UPDATE users SET password = ? WHERE email = ?', [hashed, email]);
-    return res.json({ message: 'Password updated successfully' });
-  } catch (err) {
-    console.error('❌ Reset password error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // =====================================================
 // HEALTH CHECK
 // =====================================================
